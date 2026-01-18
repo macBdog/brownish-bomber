@@ -5,7 +5,15 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>The Brownish Bomber - Boxing Workout Generator</title>
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap'); * {
+            @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=DSEG7+Classic:wght@700&display=swap');
+            
+            @font-face {
+                font-family: 'DSEG7';
+                src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff2') format('woff2');
+                font-weight: bold;
+            }
+            
+            * {
                 margin: 0;
                 box-sizing: border-box;
             }
@@ -489,6 +497,165 @@
                 margin: 20px 0;
             }
 
+            /* Timer Overlay Styles */
+            .timer-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(28, 20, 16, 0.98);
+                z-index: 2000;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+
+            .timer-overlay.active {
+                display: flex;
+            }
+
+            .timer-display {
+                font-family: 'DSEG7', 'Courier New', monospace;
+                font-size: 10rem;
+                color: #ff0000;
+                text-shadow: 0 0 20px rgba(255, 0, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.4), 0 0 60px rgba(255, 0, 0, 0.2);
+                line-height: 1;
+                margin-bottom: 10px;
+                background: rgba(0, 0, 0, 0.5);
+                padding: 20px 40px;
+                border: 3px solid #330000;
+                border-radius: 10px;
+            }
+
+            .timer-round-counter {
+                font-family: 'DSEG7', 'Courier New', monospace;
+                font-size: 2.5rem;
+                color: #ff0000;
+                text-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+                margin-bottom: 30px;
+                letter-spacing: 4px;
+            }
+
+            .timer-exercise {
+                text-align: center;
+                max-width: 600px;
+                margin-bottom: 40px;
+            }
+
+            .timer-section-label {
+                font-family: 'Bebas Neue', Impact, sans-serif;
+                font-size: 1.5rem;
+                color: var(--text-muted);
+                letter-spacing: 4px;
+                margin-bottom: 10px;
+            }
+
+            .timer-exercise-name {
+                font-family: 'Bebas Neue', Impact, sans-serif;
+                font-size: 3rem;
+                color: var(--cream);
+                letter-spacing: 3px;
+                margin-bottom: 10px;
+            }
+
+            .timer-exercise-detail {
+                font-size: 1.2rem;
+                color: var(--text-muted);
+            }
+
+            .timer-combo {
+                font-family: 'Bebas Neue', Impact, sans-serif;
+                font-size: 4rem;
+                color: var(--cream);
+                letter-spacing: 6px;
+                text-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+                margin-bottom: 10px;
+            }
+
+            .timer-progress {
+                font-size: 1rem;
+                color: var(--text-muted);
+                margin-bottom: 20px;
+                letter-spacing: 2px;
+            }
+
+            .timer-controls {
+                display: flex;
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .timer-btn {
+                padding: 15px 30px;
+                font-family: 'Bebas Neue', Impact, sans-serif;
+                font-size: 1.3rem;
+                letter-spacing: 3px;
+                border: 3px solid var(--gold);
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .timer-btn-pause {
+                background: linear-gradient(180deg, var(--accent) 0%, #8B0000 100%);
+                color: var(--cream);
+            }
+
+            .timer-btn-skip {
+                background: linear-gradient(180deg, var(--leather) 0%, var(--primary-dark) 100%);
+                color: var(--cream);
+            }
+
+            .timer-btn-stop {
+                background: linear-gradient(180deg, #333 0%, #111 100%);
+                color: var(--cream);
+            }
+
+            .timer-btn:hover {
+                transform: scale(1.05);
+            }
+
+            .btn-start {
+                background: linear-gradient(180deg, var(--accent) 0%, #8B0000 100%);
+                color: var(--cream);
+                border: 3px solid var(--gold);
+                box-shadow: 0 4px 0 var(--primary-dark), 0 6px 20px rgba(0,0,0,0.4);
+                padding: 12px 25px;
+                font-size: 1.2rem;
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                margin: 0 auto;
+            }
+
+            .btn-start:hover {
+                background: linear-gradient(180deg, #E63950 0%, var(--accent) 100%);
+                transform: translateY(-2px) scale(1.05);
+                box-shadow: 0 6px 0 var(--primary-dark), 0 10px 30px rgba(196, 30, 58, 0.4);
+            }
+
+            .btn-start .bell-icon {
+                font-size: 1.4rem;
+                animation: ring 1s ease-in-out infinite;
+            }
+
+            @keyframes ring {
+                0%, 100% { transform: rotate(0deg); }
+                10%, 30% { transform: rotate(10deg); }
+                20%, 40% { transform: rotate(-10deg); }
+                50% { transform: rotate(0deg); }
+            }
+
+            .start-button-container {
+                text-align: center;
+                padding: 20px;
+                background: linear-gradient(135deg, var(--bg-worn) 0%, var(--bg-card) 100%);
+                border-bottom: 3px solid var(--gold);
+            }
+
             @media (max-width: 600px) {
                 h1 {
                     font-size: 2.2rem;
@@ -506,6 +673,23 @@
                 .btn {
                     font-size: 1.2rem;
                     padding: 15px 30px;
+                }
+
+                .timer-display {
+                    font-size: 5rem;
+                    padding: 15px 25px;
+                }
+
+                .timer-round-counter {
+                    font-size: 1.5rem;
+                }
+
+                .timer-exercise-name {
+                    font-size: 2rem;
+                }
+
+                .timer-combo {
+                    font-size: 2.5rem;
                 }
             }
         </style>
@@ -550,7 +734,29 @@
                     <button class="btn btn-primary" onclick="generateWorkout()">Generate Workout</button>
                 </div>
             </div>
+            <!-- Timer Overlay -->
+            <div id="timerOverlay" class="timer-overlay">
+                <div class="timer-display" id="timerDisplay">0:00</div>
+                <div class="timer-round-counter" id="timerRoundCounter">1 / 8</div>
+                <div class="timer-exercise">
+                    <div class="timer-section-label" id="timerSection">WARM-UP</div>
+                    <div class="timer-exercise-name" id="timerExerciseName">Exercise Name</div>
+                    <div class="timer-exercise-detail" id="timerExerciseDetail">Details here</div>
+                    <div class="timer-combo" id="timerCombo"></div>
+                </div>
+                <div class="timer-controls">
+                    <button class="timer-btn timer-btn-skip" onclick="skipExercise(-1)">◀ PREV</button>
+                    <button class="timer-btn timer-btn-pause" id="pauseBtn" onclick="togglePause()">PAUSE</button>
+                    <button class="timer-btn timer-btn-skip" onclick="skipExercise(1)">NEXT ▶</button>
+                    <button class="timer-btn timer-btn-stop" onclick="stopWorkout()">STOP</button>
+                </div>
+            </div>
             <div id="workoutDisplay" class="workout-display">
+                <div class="start-button-container">
+                    <button id="startWorkoutBtn" class="btn btn-start" onclick="startWorkout()">
+                        <span class="bell-icon">🔔</span> RING THE BELL
+                    </button>
+                </div>
                 <div class="workout-header">
                     <h2>Workout</h2>
                 </div>
@@ -856,6 +1062,135 @@
                 return html;
             }
 
+            // Timer state
+            let workoutSteps = [];
+            let currentStepIndex = 0;
+            let timeRemaining = 0;
+            let timerInterval = null;
+            let isPaused = false;
+            let totalRounds = 0;
+
+            function buildWorkoutSteps(comboLength, warmupRounds, techniqueRounds, burnoutRounds, conditioningRounds) {
+                const steps = [];
+                let roundNum = 1;
+
+                // Warm-up steps
+                for (let r = 0; r < warmupRounds; r++) {
+                    const exercises = getRandomItems(warmupExercises, 3);
+                    exercises.forEach(ex => {
+                        steps.push({
+                            section: 'WARM-UP',
+                            name: ex.name,
+                            detail: ex.detail,
+                            duration: 60,
+                            combo: null,
+                            round: roundNum
+                        });
+                    });
+                    roundNum++;
+                }
+
+                // Technique steps
+                const minLength = 3;
+                const lengthRange = comboLength - minLength;
+                for (let r = 1; r <= techniqueRounds; r++) {
+                    const progress = (r - 1) / Math.max(techniqueRounds - 1, 1);
+                    const currentLength = Math.round(minLength + (lengthRange * progress));
+                    const sequence = generateCombo(currentLength);
+                    steps.push({
+                        section: 'TECHNIQUE',
+                        name: `Round ${roundNum}`,
+                        detail: getComboDescription(sequence),
+                        duration: 180, // 3 minutes per technique round
+                        combo: sequence,
+                        round: roundNum
+                    });
+                    if (r < techniqueRounds) {
+                        steps.push({
+                            section: 'REST',
+                            name: 'Rest',
+                            detail: 'Recover and prepare',
+                            duration: 60,
+                            combo: null,
+                            round: roundNum
+                        });
+                    }
+                    roundNum++;
+                }
+
+                // Burnout steps
+                const minBurnoutLength = Math.max(3, Math.ceil(comboLength * 0.6));
+                const burnoutLengthRange = comboLength - minBurnoutLength;
+                for (let r = 1; r <= burnoutRounds; r++) {
+                    const progress = (r - 1) / Math.max(burnoutRounds - 1, 1);
+                    const currentLength = Math.round(minBurnoutLength + (burnoutLengthRange * progress));
+                    const isSpeedRound = r % 2 === 1;
+                    const intensityType = isSpeedRound ? 'MAX SPEED' : 'MAX POWER';
+                    
+                    // 2 combos per burnout round, 30 seconds each
+                    for (let c = 0; c < 2; c++) {
+                        const sequence = generateCombo(currentLength);
+                        steps.push({
+                            section: `BURN-OUT - ${intensityType}`,
+                            name: `Round ${roundNum} - Combo ${c + 1}`,
+                            detail: `${intensityType} - 30 seconds`,
+                            duration: 30,
+                            combo: sequence,
+                            round: roundNum
+                        });
+                    }
+                    if (r < burnoutRounds) {
+                        steps.push({
+                            section: 'REST',
+                            name: 'Rest',
+                            detail: 'Quick recovery',
+                            duration: 30,
+                            combo: null,
+                            round: roundNum
+                        });
+                    }
+                    roundNum++;
+                }
+
+                // Conditioning steps
+                for (let r = 0; r < conditioningRounds; r++) {
+                    const exercises = getRandomItems(conditioningExercises, 3);
+                    exercises.forEach((ex, i) => {
+                        steps.push({
+                            section: 'CONDITIONING',
+                            name: ex.name,
+                            detail: ex.detail,
+                            duration: 45,
+                            combo: null,
+                            round: roundNum
+                        });
+                        if (i < 2) {
+                            steps.push({
+                                section: 'REST',
+                                name: 'Rest',
+                                detail: 'Brief recovery',
+                                duration: 15,
+                                combo: null,
+                                round: roundNum
+                            });
+                        }
+                    });
+                    if (r < conditioningRounds - 1) {
+                        steps.push({
+                            section: 'REST',
+                            name: 'Rest',
+                            detail: 'Recover before next round',
+                            duration: 60,
+                            combo: null,
+                            round: roundNum
+                        });
+                    }
+                    roundNum++;
+                }
+
+                return steps;
+            }
+
             function generateWorkout() {
                 const comboLength = parseInt(document.getElementById('comboLength').value);
                 const numRounds = parseInt(document.getElementById('numRounds').value);
@@ -886,6 +1221,83 @@
                 document.getElementById('workoutDisplay').scrollIntoView({
                     behavior: 'smooth'
                 });
+
+                // Build workout steps for timer
+                workoutSteps = buildWorkoutSteps(comboLength, warmupRounds, techniqueRounds, burnoutRounds, conditioningRounds);
+                totalRounds = warmupRounds + techniqueRounds + burnoutRounds + conditioningRounds;
+            }
+
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            function updateTimerDisplay() {
+                const step = workoutSteps[currentStepIndex];
+                document.getElementById('timerDisplay').textContent = formatTime(timeRemaining);
+                document.getElementById('timerSection').textContent = step.section;
+                document.getElementById('timerExerciseName').textContent = step.name;
+                document.getElementById('timerExerciseDetail').textContent = step.detail;
+                document.getElementById('timerCombo').textContent = step.combo || '';
+                document.getElementById('timerRoundCounter').textContent = `${step.round} / ${totalRounds}`;
+            }
+
+            function startWorkout() {
+                if (workoutSteps.length === 0) return;
+                
+                currentStepIndex = 0;
+                timeRemaining = workoutSteps[0].duration;
+                isPaused = false;
+                document.getElementById('pauseBtn').textContent = 'PAUSE';
+                
+                document.getElementById('timerOverlay').classList.add('active');
+                updateTimerDisplay();
+                
+                timerInterval = setInterval(() => {
+                    if (!isPaused) {
+                        timeRemaining--;
+                        updateTimerDisplay();
+                        
+                        if (timeRemaining <= 0) {
+                            nextStep();
+                        }
+                    }
+                }, 1000);
+            }
+
+            function nextStep() {
+                currentStepIndex++;
+                if (currentStepIndex >= workoutSteps.length) {
+                    stopWorkout();
+                    alert('Workout Complete! Great job!');
+                    return;
+                }
+                timeRemaining = workoutSteps[currentStepIndex].duration;
+                updateTimerDisplay();
+            }
+
+            function skipExercise(direction) {
+                const newIndex = currentStepIndex + direction;
+                if (newIndex >= 0 && newIndex < workoutSteps.length) {
+                    currentStepIndex = newIndex;
+                    timeRemaining = workoutSteps[currentStepIndex].duration;
+                    updateTimerDisplay();
+                }
+            }
+
+            function togglePause() {
+                isPaused = !isPaused;
+                document.getElementById('pauseBtn').textContent = isPaused ? 'RESUME' : 'PAUSE';
+            }
+
+            function stopWorkout() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                document.getElementById('timerOverlay').classList.remove('active');
+                isPaused = false;
             }
         </script>
     </body>
