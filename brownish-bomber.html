@@ -1069,6 +1069,63 @@
             let timerInterval = null;
             let isPaused = false;
             let totalRounds = 0;
+            let lastRound = 0;
+
+            // Boxing bell sound using Web Audio API
+            let audioCtx = null;
+            
+            function getAudioContext() {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                return audioCtx;
+            }
+            
+            function playSingleBell(startTime) {
+                const ctx = getAudioContext();
+                
+                // Main bell strike - lower, punchier frequencies
+                const mainFreqs = [600, 900, 1400, 2000];
+                mainFreqs.forEach((freq, i) => {
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    
+                    oscillator.type = i < 2 ? 'triangle' : 'sine';
+                    oscillator.frequency.setValueAtTime(freq, startTime);
+                    
+                    // Louder initial hit
+                    const volume = 0.5 - (i * 0.1);
+                    gainNode.gain.setValueAtTime(volume, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+                    
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + 0.5);
+                });
+                
+                // Add a sharp attack transient for more punch
+                const noise = ctx.createOscillator();
+                const noiseGain = ctx.createGain();
+                noise.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                noise.type = 'square';
+                noise.frequency.setValueAtTime(400, startTime);
+                noiseGain.gain.setValueAtTime(0.4, startTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.08);
+                noise.start(startTime);
+                noise.stop(startTime + 0.08);
+            }
+            
+            function playBellSound(chimes = 1) {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                
+                for (let i = 0; i < chimes; i++) {
+                    playSingleBell(now + (i * 0.35));
+                }
+            }
 
             function buildWorkoutSteps(comboLength, warmupRounds, techniqueRounds, burnoutRounds, conditioningRounds) {
                 const steps = [];
@@ -1248,16 +1305,27 @@
                 
                 currentStepIndex = 0;
                 timeRemaining = workoutSteps[0].duration;
+                lastRound = workoutSteps[0].round;
                 isPaused = false;
                 document.getElementById('pauseBtn').textContent = 'PAUSE';
                 
                 document.getElementById('timerOverlay').classList.add('active');
                 updateTimerDisplay();
+                playBellSound(3); // 3 bells at workout start
                 
                 timerInterval = setInterval(() => {
                     if (!isPaused) {
                         timeRemaining--;
                         updateTimerDisplay();
+                        
+                        // Check for minute markers
+                        const step = workoutSteps[currentStepIndex];
+                        const elapsed = step.duration - timeRemaining;
+                        if (elapsed === 60) {
+                            playBellSound(1); // 1 bell at 1 minute
+                        } else if (elapsed === 120) {
+                            playBellSound(2); // 2 bells at 2 minutes
+                        }
                         
                         if (timeRemaining <= 0) {
                             nextStep();
@@ -1269,10 +1337,18 @@
             function nextStep() {
                 currentStepIndex++;
                 if (currentStepIndex >= workoutSteps.length) {
+                    playBellSound(3); // 3 bells at workout end
                     stopWorkout();
                     alert('Workout Complete! Great job!');
                     return;
                 }
+                
+                const newRound = workoutSteps[currentStepIndex].round;
+                if (newRound !== lastRound) {
+                    playBellSound(3); // 3 bells when round changes
+                    lastRound = newRound;
+                }
+                
                 timeRemaining = workoutSteps[currentStepIndex].duration;
                 updateTimerDisplay();
             }
