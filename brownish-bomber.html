@@ -552,7 +552,7 @@
             </div>
             <div id="workoutDisplay" class="workout-display">
                 <div class="workout-header">
-                    <h2>Your Workout</h2>
+                    <h2>Workout</h2>
                 </div>
                 <div id="workoutContent"></div>
             </div>
@@ -652,7 +652,7 @@
                 detail: "Activate the legs"
             }, {
                 name: "Pushup Combo",
-                detail: "1min wide, 1min medium, 1min close"
+                detail: "1x wide, 1x medium, 1x close"
             }, {
                 name: "Shoulder & Neck Rolls",
                 detail: "Prepare for punching"
@@ -737,36 +737,37 @@
                 return names.join(', ');
             }
 
-            function generateWarmupSection(numRounds) {
-                const warmupCount = Math.min(Math.ceil(numRounds / 3), warmupExercises.length);
-                const exercises = getRandomItems(warmupExercises, warmupCount);
+            function generateWarmupSection(warmupRounds) {
                 let html = `
                 <div class="section">
-                    <div class="section-header warmup">🔥 Warm-Up</div>
+                    <div class="section-header warmup">🔥 Warm-Up (${warmupRounds} rounds)</div>
                     <div class="section-content">
             `;
-                exercises.forEach(ex => {
-                    html += `
-                    <div class="exercise-item">
-                        <div class="exercise-name">${ex.name}</div>
-                        <div class="exercise-detail">${ex.detail} - 1 min</div>
-                    </div>
-                `;
+                for (let r = 0; r < warmupRounds; r++) {
+                    const exercises = getRandomItems(warmupExercises, 3);
+                    html += `<div class="round"><div class="round-number">Round ${r + 1}</div>`;
+                    exercises.forEach(ex => {
+                        html += `
+                        <div class="exercise-item">
+                            <div class="exercise-name">${ex.name}</div>
+                            <div class="exercise-detail">${ex.detail} - 1 min, no rest</div>
+                        </div>
+                    `;
+                    });
+                    html += `</div>`;
                 }
-                );
                 html += `</div></div>`;
                 return html;
             }
 
-            function generateTechniqueSection(maxComboLength, numRounds) {
-                const techniqueRounds = Math.ceil(numRounds * 0.25);
+            function generateTechniqueSection(maxComboLength, techniqueRounds, startRound) {
                 // Start at length 3, build up to max
                 const minLength = 3;
                 const lengthRange = maxComboLength - minLength;
 
                 let html = `
                 <div class="section">
-                    <div class="section-header technique">🎯 Technique</div>
+                    <div class="section-header technique">🎯 Technique (${techniqueRounds} rounds)</div>
                     <div class="section-content">
             `;
                 for (let r = 1; r <= techniqueRounds; r++) {
@@ -774,7 +775,7 @@
                     const progress = (r - 1) / Math.max(techniqueRounds - 1, 1);
                     const currentLength = Math.round(minLength + (lengthRange * progress));
                     const sequence = generateCombo(currentLength);
-                    html += `<div class="round"><div class="round-number">Round ${r}</div>`;
+                    html += `<div class="round"><div class="round-number">Round ${startRound + r - 1}</div>`;
                     html += `
                     <div class="combo">
                         <div class="combo-sequence">${sequence}</div>
@@ -790,30 +791,33 @@
                 return html;
             }
 
-            function generateBurnoutSection(maxComboLength, numRounds) {
-                const burnoutRounds = Math.ceil(numRounds * 0.3);
+            function generateBurnoutSection(maxComboLength, burnoutRounds, startRound) {
                 // Burnout uses longer combos (last 60% of the length range)
                 const minBurnoutLength = Math.max(3, Math.ceil(maxComboLength * 0.6));
                 const lengthRange = maxComboLength - minBurnoutLength;
 
                 let html = `
                 <div class="section">
-                    <div class="section-header burnout">💥 Burn-Out</div>
+                    <div class="section-header burnout">💥 Burn-Out (${burnoutRounds} rounds)</div>
                     <div class="section-content">
             `;
                 for (let r = 1; r <= burnoutRounds; r++) {
                     // Progressive length for burnout too
                     const progress = (r - 1) / Math.max(burnoutRounds - 1, 1);
                     const currentLength = Math.round(minBurnoutLength + (lengthRange * progress));
+                    
+                    // Alternate between MAX SPEED and MAX POWER
+                    const isSpeedRound = r % 2 === 1;
+                    const intensityType = isSpeedRound ? 'MAX SPEED' : 'MAX POWER';
 
-                    html += `<div class="round"><div class="round-number">Round ${r} - HIGH INTENSITY</div>`;
+                    html += `<div class="round"><div class="round-number">Round ${startRound + r - 1} - ${intensityType}</div>`;
                     // 2 combos per burnout round
                     for (let c = 0; c < 2; c++) {
                         const sequence = generateCombo(currentLength);
                         html += `
                         <div class="combo">
                             <div class="combo-sequence">${sequence}</div>
-                            <div class="combo-description">MAX SPEED - 30 seconds, no rest between combos</div>
+                            <div class="combo-description">${intensityType} - 30 seconds, no rest between combos</div>
                         </div>
                     `;
                     }
@@ -826,23 +830,28 @@
                 return html;
             }
 
-            function generateConditioningSection(numRounds) {
-                const conditioningCount = Math.min(Math.ceil(numRounds / 3), conditioningExercises.length);
-                const exercises = getRandomItems(conditioningExercises, conditioningCount);
+            function generateConditioningSection(conditioningRounds, startRound) {
                 let html = `
                 <div class="section">
-                    <div class="section-header conditioning">💪 Conditioning</div>
+                    <div class="section-header conditioning">💪 Conditioning (${conditioningRounds} rounds)</div>
                     <div class="section-content">
             `;
-                exercises.forEach(ex => {
-                    html += `
-                    <div class="exercise-item">
-                        <div class="exercise-name">${ex.name}</div>
-                        <div class="exercise-detail">${ex.detail} - 45 seconds work, 15 seconds rest</div>
-                    </div>
-                `;
+                for (let r = 0; r < conditioningRounds; r++) {
+                    const exercises = getRandomItems(conditioningExercises, 3);
+                    html += `<div class="round"><div class="round-number">Round ${startRound + r}</div>`;
+                    exercises.forEach((ex, i) => {
+                        html += `
+                        <div class="exercise-item">
+                            <div class="exercise-name">${ex.name}</div>
+                            <div class="exercise-detail">${ex.detail} - 45 seconds${i < 2 ? ', 15 seconds rest' : ''}</div>
+                        </div>
+                    `;
+                    });
+                    html += `</div>`;
+                    if (r < conditioningRounds - 1) {
+                        html += `<div class="rest-period">⏱️ Rest - 1 Minute</div>`;
+                    }
                 }
-                );
                 html += `</div></div>`;
                 return html;
             }
@@ -851,11 +860,26 @@
                 const comboLength = parseInt(document.getElementById('comboLength').value);
                 const numRounds = parseInt(document.getElementById('numRounds').value);
 
+                // Distribute rounds: 15% warmup, 35% technique, 35% burnout, 15% conditioning
+                const warmupRounds = Math.max(1, Math.round(numRounds * 0.15));
+                const conditioningRounds = Math.max(1, Math.round(numRounds * 0.15));
+                const remainingRounds = numRounds - warmupRounds - conditioningRounds;
+                const techniqueRounds = Math.max(1, Math.round(remainingRounds * 0.5));
+                const burnoutRounds = Math.max(1, remainingRounds - techniqueRounds);
+
+                let currentRound = 1;
                 let html = '';
-                html += generateWarmupSection(numRounds);
-                html += generateTechniqueSection(comboLength, numRounds);
-                html += generateBurnoutSection(comboLength, numRounds);
-                html += generateConditioningSection(numRounds);
+
+                html += generateWarmupSection(warmupRounds);
+                currentRound += warmupRounds;
+
+                html += generateTechniqueSection(comboLength, techniqueRounds, currentRound);
+                currentRound += techniqueRounds;
+
+                html += generateBurnoutSection(comboLength, burnoutRounds, currentRound);
+                currentRound += burnoutRounds;
+
+                html += generateConditioningSection(conditioningRounds, currentRound);
 
                 document.getElementById('workoutContent').innerHTML = html;
                 document.getElementById('workoutDisplay').classList.add('active');
