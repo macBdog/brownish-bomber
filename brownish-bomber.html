@@ -153,6 +153,7 @@
                 margin-bottom: 0;
             }
 
+
             label {
                 display: block;
                 margin-bottom: 8px;
@@ -728,10 +729,10 @@
                         <label for="numRounds">Number of Rounds</label>
                         <span id="numRoundsValue" class="slider-value">8</span>
                     </div>
-                    <input type="range" id="numRounds" min="4" max="15" value="8" oninput="updateSliderValue('numRounds')">
+                    <input type="range" id="numRounds" min="4" max="15" value="8" oninput="updateSliderValue('numRounds'); updateWorkoutTime();">
                 </div>
                 <div class="control-group">
-                    <button class="btn btn-primary" onclick="generateWorkout()">Generate Workout</button>
+                    <button class="btn btn-primary" onclick="generateWorkout()">Generate Workout — <span id="workoutTimeValue">31 min</span></button>
                 </div>
             </div>
             <!-- Timer Overlay -->
@@ -907,6 +908,16 @@
                 const display = document.getElementById(id + 'Value');
                 display.textContent = slider.value;
             }
+
+            function updateWorkoutTime() {
+                const numRounds = parseInt(document.getElementById('numRounds').value);
+                // 3 minutes per round + 1 minute rest between rounds
+                const totalMinutes = (numRounds * 3) + (numRounds - 1);
+                document.getElementById('workoutTimeValue').textContent = totalMinutes + ' min';
+            }
+
+            // Initialize workout time on page load
+            document.addEventListener('DOMContentLoaded', updateWorkoutTime);
 
             function getRandomItems(array, count) {
                 const available = [...array];
