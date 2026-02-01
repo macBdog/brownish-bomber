@@ -590,6 +590,26 @@
                 justify-content: center;
             }
 
+            .timer-ff-container {
+                margin-top: 10px;
+                text-align: center;
+            }
+
+            .timer-btn-ff {
+                padding: 8px 18px;
+                font-size: 1rem;
+                border: 1px solid rgba(255,215,0,0.6);
+                background: rgba(255,255,255,0.04);
+                color: var(--cream);
+                opacity: 0.85;
+            }
+
+            .timer-btn-ff.active {
+                background: rgba(255,215,0,0.12);
+                transform: none;
+                opacity: 1;
+            }
+
             .timer-btn {
                 padding: 15px 30px;
                 font-family: 'Bebas Neue', Impact, sans-serif;
@@ -751,6 +771,9 @@
                     <button class="timer-btn timer-btn-skip" onclick="skipExercise(1)">NEXT ▶</button>
                     <button class="timer-btn timer-btn-stop" onclick="stopWorkout()">STOP</button>
                 </div>
+                <div class="timer-ff-container">
+                    <button class="timer-btn timer-btn-ff" id="ffBtn" onmousedown="startFastForward()" onmouseup="stopFastForward()" onmouseleave="stopFastForward()" ontouchstart="startFastForward()" ontouchend="stopFastForward()">Fast Forward</button>
+                </div>
             </div>
             <div id="workoutDisplay" class="workout-display">
                 <div class="start-button-container">
@@ -765,40 +788,7 @@
             </div>
             <div class="legend">
                 <h3>Punch Legend</h3>
-                <div class="legend-grid">
-                    <div class="legend-item">
-                        <span class="legend-number">1</span>
-                        <span>Jab</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-number">2</span>
-                        <span>Cross</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-number">3</span>
-                        <span>Lead Hook</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-number">4</span>
-                        <span>Rear Hook</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-number">5</span>
-                        <span>Lead Uppercut</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-number">6</span>
-                        <span>Rear Uppercut</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-number">7</span>
-                        <span>Lead Rip</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-number">8</span>
-                        <span>Rear Rip</span>
-                    </div>
-                </div>
+                <div class="legend-grid" id="legendGrid"></div>
             </div>
         </div>
         <script>
@@ -834,7 +824,7 @@
                 name: "Roll"
             }, {
                 key: "B",
-                name: "Step Back"
+                name: "Step Back/Pull"
             }, {
                 key: "P",
                 name: "Pivot"
@@ -866,7 +856,30 @@
             }, {
                 name: "Butt Kickers",
                 detail: "Jogging with heels to butt"
+
             }];
+
+            // Render punch legend from `punches` array
+            (function renderPunchLegend() {
+                const grid = document.getElementById('legendGrid');
+                if (!grid) return;
+                grid.innerHTML = '';
+                punches.forEach(p => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+
+                    const key = document.createElement('span');
+                    key.className = 'legend-number';
+                    key.textContent = p.key;
+
+                    const name = document.createElement('span');
+                    name.textContent = p.name;
+
+                    item.appendChild(key);
+                    item.appendChild(name);
+                    grid.appendChild(item);
+                });
+            })();
 
             const conditioningExercises = [{
                 name: "Burpees",
@@ -1081,6 +1094,8 @@
             let isPaused = false;
             let totalRounds = 0;
             let lastRound = 0;
+            // Fast-forward multiplier (1 = real-time, 10 = x10)
+            let timeMultiplier = 1;
 
             // Boxing bell sound using Web Audio API
             let audioCtx = null;
@@ -1094,47 +1109,54 @@
             
             function playSingleBell(startTime) {
                 const ctx = getAudioContext();
-                
-                // Main bell strike - lower, punchier frequencies
-                const mainFreqs = [600, 900, 1400, 2000];
-                mainFreqs.forEach((freq, i) => {
-                    const oscillator = ctx.createOscillator();
-                    const gainNode = ctx.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(ctx.destination);
-                    
-                    oscillator.type = i < 2 ? 'triangle' : 'sine';
-                    oscillator.frequency.setValueAtTime(freq, startTime);
-                    
-                    // Louder initial hit
-                    const volume = 0.5 - (i * 0.1);
-                    gainNode.gain.setValueAtTime(volume, startTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-                    
-                    oscillator.start(startTime);
-                    oscillator.stop(startTime + 0.5);
-                });
-                
-                // Add a sharp attack transient for more punch
-                const noise = ctx.createOscillator();
+
+                // Buzzer-style tone: square oscillator with LFO vibrato and a short noise transient
+                // Shorter tone
+                const duration = 0.35;
+
+                // Main buzzer oscillator
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                // Octave higher constant buzzer pitch (no ramp)
+                osc.frequency.setValueAtTime(440, startTime);
+
+                const gainNode = ctx.createGain();
+                // Envelope: quick attack and sustain (no decay)
+                gainNode.gain.setValueAtTime(0.0001, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.5, startTime + 0.02);
+                // Hold sustain level until stopTime (no decay)
+                gainNode.gain.setValueAtTime(0.5, startTime + 0.02);
+
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
+
+                // No vibrato: start and stop the oscillator only
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+
+                // Short gritty noise for attack
+                const bufferSize = Math.floor(ctx.sampleRate * 0.02);
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.25;
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
                 const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.12, startTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.02);
                 noise.connect(noiseGain);
                 noiseGain.connect(ctx.destination);
-                noise.type = 'square';
-                noise.frequency.setValueAtTime(400, startTime);
-                noiseGain.gain.setValueAtTime(0.4, startTime);
-                noiseGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.08);
                 noise.start(startTime);
-                noise.stop(startTime + 0.08);
+                noise.stop(startTime + 0.02);
             }
             
             function playBellSound(chimes = 1) {
                 const ctx = getAudioContext();
                 const now = ctx.currentTime;
-                
+                // Spacing between tones: slightly longer than the tone to create a short gap
+                const spacing = 0.45; // seconds between tone starts
                 for (let i = 0; i < chimes; i++) {
-                    playSingleBell(now + (i * 0.35));
+                    playSingleBell(now + (i * spacing));
                 }
             }
 
@@ -1296,8 +1318,11 @@
             }
 
             function formatTime(seconds) {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
+                // Ensure we display whole seconds only (no decimals).
+                // Use Math.ceil so the remaining time shows full seconds until they elapse.
+                const total = Math.max(0, Math.ceil(seconds));
+                const mins = Math.floor(total / 60);
+                const secs = total % 60;
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
             }
 
@@ -1324,25 +1349,35 @@
                 updateTimerDisplay();
                 playBellSound(3); // 3 bells at workout start
                 
+                // Use a higher-frequency tick and time-based delta so the timer
+                // can run faster than real-time while the user holds Fast Forward.
+                let lastTick = performance.now();
                 timerInterval = setInterval(() => {
+                    const nowTick = performance.now();
+                    const deltaSec = (nowTick - lastTick) / 1000;
+                    lastTick = nowTick;
                     if (!isPaused) {
-                        timeRemaining--;
-                        updateTimerDisplay();
-                        
-                        // Check for minute markers
                         const step = workoutSteps[currentStepIndex];
-                        const elapsed = step.duration - timeRemaining;
-                        if (elapsed === 60) {
-                            playBellSound(1); // 1 bell at 1 minute
-                        } else if (elapsed === 120) {
-                            playBellSound(2); // 2 bells at 2 minutes
+                        const prevRemaining = timeRemaining;
+                        // Decrement by scaled elapsed time (real seconds * multiplier)
+                        timeRemaining = Math.max(0, timeRemaining - (deltaSec * timeMultiplier));
+                        updateTimerDisplay();
+
+                        // Detect minute markers even when skipping seconds
+                        const prevElapsed = step.duration - prevRemaining;
+                        const newElapsed = step.duration - timeRemaining;
+                        if (Math.floor(prevElapsed) < 60 && Math.floor(newElapsed) >= 60) {
+                            playBellSound(1);
                         }
-                        
+                        if (Math.floor(prevElapsed) < 120 && Math.floor(newElapsed) >= 120) {
+                            playBellSound(2);
+                        }
+
                         if (timeRemaining <= 0) {
                             nextStep();
                         }
                     }
-                }, 1000);
+                }, 100);
             }
 
             function nextStep() {
@@ -1376,6 +1411,22 @@
             function togglePause() {
                 isPaused = !isPaused;
                 document.getElementById('pauseBtn').textContent = isPaused ? 'RESUME' : 'PAUSE';
+            }
+
+            function startFastForward() {
+                const btn = document.getElementById('ffBtn');
+                timeMultiplier = 10;
+                if (btn) {
+                    btn.classList.add('active');
+                }
+            }
+
+            function stopFastForward() {
+                const btn = document.getElementById('ffBtn');
+                timeMultiplier = 1;
+                if (btn) {
+                    btn.classList.remove('active');
+                }
             }
 
             function stopWorkout() {
