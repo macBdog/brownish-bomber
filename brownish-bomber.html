@@ -1163,8 +1163,9 @@
             function buildWorkoutSteps(comboLength, warmupRounds, techniqueRounds, burnoutRounds, conditioningRounds) {
                 const steps = [];
                 let roundNum = 1;
+                const totalRounds = warmupRounds + techniqueRounds + burnoutRounds + conditioningRounds;
 
-                // Warm-up steps
+                // Warm-up: each warmup round is 3 minutes, exercises change every minute
                 for (let r = 0; r < warmupRounds; r++) {
                     const exercises = getRandomItems(warmupExercises, 3);
                     exercises.forEach(ex => {
@@ -1177,6 +1178,17 @@
                             round: roundNum
                         });
                     });
+                    // Always add a rest between rounds unless this is the final round
+                    if (roundNum < totalRounds) {
+                        steps.push({
+                            section: 'REST',
+                            name: 'Rest',
+                            detail: 'Recover and prepare',
+                            duration: 60,
+                            combo: null,
+                            round: roundNum
+                        });
+                    }
                     roundNum++;
                 }
 
@@ -1195,7 +1207,8 @@
                         combo: sequence,
                         round: roundNum
                     });
-                    if (r < techniqueRounds) {
+                    // Add rest between technique rounds (and between this and next round)
+                    if (roundNum < totalRounds) {
                         steps.push({
                             section: 'REST',
                             name: 'Rest',
@@ -1211,30 +1224,31 @@
                 // Burnout steps
                 const minBurnoutLength = Math.max(3, Math.ceil(comboLength * 0.6));
                 const burnoutLengthRange = comboLength - minBurnoutLength;
+                // Burnout: each burnout round is 3 minutes, exercises change every minute
                 for (let r = 1; r <= burnoutRounds; r++) {
                     const progress = (r - 1) / Math.max(burnoutRounds - 1, 1);
                     const currentLength = Math.round(minBurnoutLength + (burnoutLengthRange * progress));
                     const isSpeedRound = r % 2 === 1;
                     const intensityType = isSpeedRound ? 'MAX SPEED' : 'MAX POWER';
-                    
-                    // 2 combos per burnout round, 30 seconds each
-                    for (let c = 0; c < 2; c++) {
+
+                    for (let m = 0; m < 3; m++) {
                         const sequence = generateCombo(currentLength);
                         steps.push({
                             section: `BURN-OUT - ${intensityType}`,
-                            name: `Round ${roundNum} - Combo ${c + 1}`,
-                            detail: `${intensityType} - 30 seconds`,
-                            duration: 30,
+                            name: `Round ${roundNum} - ${intensityType}`,
+                            detail: `${intensityType} - Minute ${m + 1}`,
+                            duration: 60,
                             combo: sequence,
                             round: roundNum
                         });
                     }
-                    if (r < burnoutRounds) {
+                    // Rest between rounds
+                    if (roundNum < totalRounds) {
                         steps.push({
                             section: 'REST',
                             name: 'Rest',
                             detail: 'Quick recovery',
-                            duration: 30,
+                            duration: 60,
                             combo: null,
                             round: roundNum
                         });
@@ -1243,29 +1257,21 @@
                 }
 
                 // Conditioning steps
+                // Conditioning: each conditioning round is 3 minutes, exercises change every minute
                 for (let r = 0; r < conditioningRounds; r++) {
                     const exercises = getRandomItems(conditioningExercises, 3);
-                    exercises.forEach((ex, i) => {
+                    exercises.forEach((ex) => {
                         steps.push({
                             section: 'CONDITIONING',
                             name: ex.name,
                             detail: ex.detail,
-                            duration: 45,
+                            duration: 60,
                             combo: null,
                             round: roundNum
                         });
-                        if (i < 2) {
-                            steps.push({
-                                section: 'REST',
-                                name: 'Rest',
-                                detail: 'Brief recovery',
-                                duration: 15,
-                                combo: null,
-                                round: roundNum
-                            });
-                        }
                     });
-                    if (r < conditioningRounds - 1) {
+                    // Rest between rounds
+                    if (roundNum < totalRounds) {
                         steps.push({
                             section: 'REST',
                             name: 'Rest',
@@ -1330,8 +1336,17 @@
                 const step = workoutSteps[currentStepIndex];
                 document.getElementById('timerDisplay').textContent = formatTime(timeRemaining);
                 document.getElementById('timerSection').textContent = step.section;
-                document.getElementById('timerExerciseName').textContent = step.name;
-                document.getElementById('timerExerciseDetail').textContent = step.detail;
+
+                // If we're within the last 10 seconds of this step, show "Up next:" with the next step
+                const next = workoutSteps[currentStepIndex + 1];
+                // Don't show "Up next" when next activity is a rest period
+                if (next && timeRemaining <= 10 && next.section !== 'REST') {
+                    document.getElementById('timerExerciseName').textContent = `Up next: ${next.name}`;
+                    document.getElementById('timerExerciseDetail').textContent = next.detail || '';
+                } else {
+                    document.getElementById('timerExerciseName').textContent = step.name;
+                    document.getElementById('timerExerciseDetail').textContent = step.detail;
+                }
                 document.getElementById('timerCombo').textContent = step.combo || '';
                 document.getElementById('timerRoundCounter').textContent = `${step.round} / ${totalRounds}`;
             }
@@ -1374,6 +1389,21 @@
                         }
 
                         if (timeRemaining <= 0) {
+                            // If this step is the last activity of its round, play 3 bells
+                            // before moving on so the bells sound at the end of the round.
+                            const curRound = workoutSteps[currentStepIndex].round;
+                            let lookahead = currentStepIndex + 1;
+                            // Skip REST steps when determining the next active round
+                            while (lookahead < workoutSteps.length && workoutSteps[lookahead].section === 'REST') {
+                                lookahead++;
+                            }
+                            if (lookahead >= workoutSteps.length) {
+                                // workout end: play bells (nextStep will also handle end)
+                                playBellSound(3);
+                            } else if (workoutSteps[lookahead].round !== curRound) {
+                                playBellSound(3);
+                            }
+
                             nextStep();
                         }
                     }
@@ -1390,8 +1420,8 @@
                 }
                 
                 const newRound = workoutSteps[currentStepIndex].round;
+                // Update lastRound marker; end-of-round bell is played by the timer
                 if (newRound !== lastRound) {
-                    playBellSound(3); // 3 bells when round changes
                     lastRound = newRound;
                 }
                 
